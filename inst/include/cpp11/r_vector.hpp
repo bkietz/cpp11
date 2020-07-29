@@ -213,30 +213,7 @@ class r_vector : public cpp11::r_vector<T> {
   R_xlen_t capacity_ = 0;
 
  public:
-  class proxy {
-   private:
-    const SEXP data_;
-    const R_xlen_t index_;
-    T* const p_;
-    bool is_altrep_;
-
-   public:
-    proxy(SEXP data, const R_xlen_t index, T* const p, bool is_altrep);
-
-    template <typename U>
-    proxy& operator=(const U& rhs);
-    proxy& operator+=(const T& rhs);
-    proxy& operator-=(const T& rhs);
-    proxy& operator*=(const T& rhs);
-    proxy& operator/=(const T& rhs);
-    proxy& operator++(int);
-    proxy& operator--(int);
-
-    void operator++();
-    void operator--();
-
-    operator T() const;
-  };
+  using proxy = r_vector_proxy<T>;
 
   typedef ptrdiff_t difference_type;
   typedef size_t size_type;
@@ -580,10 +557,6 @@ inline const T r_vector<T>::operator[](size_type pos) const {
 namespace writable {
 
 template <typename T>
-r_vector<T>::proxy::proxy(SEXP data, const R_xlen_t index, T* const p, bool is_altrep)
-    : data_(data), index_(index), p_(p), is_altrep_(is_altrep) {}
-
-template <typename T>
 inline typename r_vector<T>::proxy r_vector<T>::iterator::operator*() {
   if (data_.is_altrep()) {
     return proxy(data_.data(), pos_, &buf_[pos_ - block_start_], true);
@@ -870,52 +843,6 @@ inline r_vector<T>::operator SEXP() const {
     SETLENGTH(data_, length_);
   }
   return data_;
-}
-
-template <typename T>
-inline typename r_vector<T>::proxy& r_vector<T>::proxy::operator+=(const T& rhs) {
-  operator=(static_cast<T>(*this) + rhs);
-  return *this;
-}
-
-template <typename T>
-inline typename r_vector<T>::proxy& r_vector<T>::proxy::operator-=(const T& rhs) {
-  operator=(static_cast<T>(*this) - rhs);
-  return *this;
-}
-
-template <typename T>
-inline typename r_vector<T>::proxy& r_vector<T>::proxy::operator*=(const T& rhs) {
-  operator=(static_cast<T>(*this) * rhs);
-  return *this;
-}
-
-template <typename T>
-inline typename r_vector<T>::proxy& r_vector<T>::proxy::operator/=(const T& rhs) {
-  operator=(static_cast<T>(*this) / rhs);
-  return *this;
-}
-
-template <typename T>
-inline typename r_vector<T>::proxy& r_vector<T>::proxy::operator++(int) {
-  operator=(static_cast<T>(*this) + 1);
-  return *this;
-}
-
-template <typename T>
-inline typename r_vector<T>::proxy& r_vector<T>::proxy::operator--(int) {
-  operator=(static_cast<T>(*this) - 1);
-  return *this;
-}
-
-template <typename T>
-inline void r_vector<T>::proxy::operator--() {
-  operator=(static_cast<T>(*this) - 1);
-}
-
-template <typename T>
-inline void r_vector<T>::proxy::operator++() {
-  operator=(static_cast<T>(*this) + 1);
 }
 
 }  // namespace writable

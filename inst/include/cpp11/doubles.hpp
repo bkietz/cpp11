@@ -49,27 +49,34 @@ typedef r_vector<double> doubles;
 namespace writable {
 
 template <>
-template <>
-inline typename r_vector<double>::proxy& r_vector<double>::proxy::operator=<double>(
-    const double& rhs) {
-  if (is_altrep_) {
-    // NOPROTECT: likely too costly to unwind protect every set elt
-    SET_REAL_ELT(data_, index_, rhs);
-  } else {
-    *p_ = rhs;
-  }
-  return *this;
-}
+class r_vector_proxy<double> : protected r_vector_proxy_base<double>,
+                               // import operators as needed
+                               public r_vector_proxy_arithmetic<double> {
+ public:
+  using proxy = r_vector_proxy<double>;
 
-template <>
-inline r_vector<double>::proxy::operator double() const {
-  if (p_ == nullptr) {
-    // NOPROTECT: likely too costly to unwind protect every elt
-    return REAL_ELT(data_, index_);
-  } else {
-    return *p_;
+  proxy& operator=(double b) {
+    // double specific assignment
+    auto& self = static_cast<proxy&>(*this);
+    if (self.is_altrep_) {
+      // NOPROTECT: likely too costly to unwind protect every set elt
+      SET_REAL_ELT(self.data_, self.index_, rhs);
+    } else {
+      *self.p_ = rhs;
+    }
+    return self;
   }
-}
+  operator double() const {
+    // double specific access
+    auto& self = static_cast<const proxy&>(*this);
+    if (self.p_ == nullptr) {
+      // NOPROTECT: likely too costly to unwind protect every elt
+      return REAL_ELT(self.data_, self.index_);
+    } else {
+      return *self.p_;
+    }
+  }
+};
 
 template <>
 inline r_vector<double>::r_vector(std::initializer_list<double> il)

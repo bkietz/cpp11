@@ -48,32 +48,34 @@ typedef r_vector<Rboolean> logicals;
 namespace writable {
 
 template <>
-template <>
-inline typename r_vector<Rboolean>::proxy& r_vector<Rboolean>::proxy::operator=<Rboolean>(
-    const Rboolean& rhs) {
-  if (is_altrep_) {
-    SET_LOGICAL_ELT(data_, index_, rhs);
-  } else {
-    *p_ = rhs;
-  }
-  return *this;
-}
+class r_vector_proxy<Rboolean> : protected r_vector_proxy_base<Rboolean> {
+ public:
+  using proxy = r_vector_proxy<Rboolean>;
 
-template <>
-template <>
-inline typename r_vector<Rboolean>::proxy& r_vector<Rboolean>::proxy::operator=<bool>(
-  const bool& rhs) {
-  return operator=(rhs ? TRUE : FALSE);
-}
-
-template <>
-inline r_vector<Rboolean>::proxy::operator Rboolean() const {
-  if (p_ == nullptr) {
-    return static_cast<Rboolean>(LOGICAL_ELT(data_, index_));
-  } else {
-    return *p_;
+  proxy& operator=(Rboolean b) {
+    // Rboolean specific assignment
+    auto& self = static_cast<proxy&>(*this);
+    if (self.is_altrep_) {
+      SET_LOGICAL_ELT(self.data_, self.index_, self.rhs);
+    } else {
+      *self.p_ = rhs;
+    }
+    return self;
   }
-}
+  operator Rboolean() const {
+    // Rboolean specific access
+    auto& self = static_cast<proxy&>(*this);
+    if (self.p_ == nullptr) {
+      return static_cast<Rboolean>(LOGICAL_ELT(self.data_, self.index_));
+    } else {
+      return *self.p_;
+    }
+  }
+  proxy& operator=(bool b) {
+    // overloads to catch anything not implicitly convertible
+    return operator=(b ? TRUE : FALSE);
+  }
+};
 
 template <>
 inline r_vector<Rboolean>::r_vector(std::initializer_list<Rboolean> il)
